@@ -54,6 +54,7 @@
 #include <ESPmDNS.h>
 #include <WifiUdp.h>
 #include <ArduinoOTA.h>
+#include <HX710.h>
 
 //=======Hardware Setup===============================
 //LEDs
@@ -79,6 +80,11 @@ ESP32Encoder myEnc;
 
 //Pressure Sensor Analog In
 #define BUTTPIN 33
+
+// HX710 Setup for Pressure Sensor
+#define HX710_DOUT_PIN 33  // HX710 data out pin
+#define HX710_SCK_PIN  25  // HX710 clock pin (choose an appropriate pin)
+HX710 pressureSensor;
 
 //=======Software/Timing options=====================
 // OTA Settings
@@ -164,6 +170,9 @@ void beep_motor(int f1, int f2, int f3){
 }
 
 void setup() {
+  // Initialize HX710
+  pressureSensor.initialize(HX710_SCK_PIN, HX710_DOUT_PIN);
+
   FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
   // limit power draw to .6A at 5v... Didn't seem to work in my FastLED version though
   //FastLED.setMaxPowerInVoltsAndMilliamps(5,DEFAULT_PLIMIT);
@@ -546,7 +555,15 @@ void loop() {
         avgPressure = raPressure.getAverage();
       }
       
-      pressure = analogRead(BUTTPIN);
+        // Check if HX710 is ready and read data
+      if (pressureSensor.isReady()) {
+          pressureSensor.beginData();
+          while (!pressureSensor.readBitAndAddToData());  // Read the entire data bit by bit
+          pressureSensor.endData();
+
+          // Get the pressure reading
+          pressure = pressureSensor.getLastDifferentialInput(); 
+      }
       fadeToBlackBy(leds,NUM_LEDS,20); //Create a fading light effect. LED buffer is not otherwise cleared
       uint8_t btnState = check_button();
       state = set_state(btnState,state); //Set the next state based on this state and button presses
