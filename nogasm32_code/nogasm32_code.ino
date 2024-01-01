@@ -32,10 +32,10 @@ ESP32Encoder myEnc;
 #define MOT_CHAN 0
 
 //Pressure Sensor Analog In
-#define BUTTPIN 33
+//#define BUTTPIN 33
 
 // HX710 Setup for Pressure Sensor
-#define HX710_DOUT_PIN 33  // HX710 data out pin
+#define HX710_DOUT_PIN 24  // HX710 data out pin
 #define HX710_SCK_PIN  25  // HX710 clock pin (choose an appropriate pin)
 HX710 pressureSensor;
 
@@ -180,7 +180,7 @@ void setup() {
 
   pinMode(MOTPIN,OUTPUT); //Enable "analog" out (PWM)
   
-  pinMode(BUTTPIN,INPUT); //default is 10 bit resolution (1024), 0-3.3
+//  pinMode(BUTTPIN,INPUT); //default is 10 bit resolution (1024), 0-3.3
   
   raPressure.clear(); //Initialize a running pressure average
 
@@ -340,10 +340,12 @@ void run_opt_beep() {
 }
 
 //Simply display the pressure analog voltage. Useful for debugging sensitivity issues.
+/*
 void run_opt_pres() {
   int p = map(analogRead(BUTTPIN),0,4095,0,NUM_LEDS-1);
   draw_cursor(p,CRGB::White);
 }
+*/
 
 //Poll the knob click button, and check for long/very long presses as well
 uint8_t check_button(){
@@ -510,13 +512,9 @@ void loop() {
       
       // Check if HX710 is ready and read data
       if (pressureSensor.isReady()) {
-          pressureSensor.beginData();
-          while (!pressureSensor.readBitAndAddToData());  // Read the entire data bit by bit
-          pressureSensor.endData(1);
-
-          // Get the pressure reading
-          pressure = pressureSensor.getLastDifferentialInput(); 
+          pressure = pressureSensor.getLastDifferentialInput();  // Or getLastOtherInput(), depending on the correct method
       }
+
       fadeToBlackBy(leds,NUM_LEDS,20); //Create a fading light effect. LED buffer is not otherwise cleared
       uint8_t btnState = check_button();
       state = set_state(btnState,state); //Set the next state based on this state and button presses
